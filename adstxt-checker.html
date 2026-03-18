@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ads.txt Line Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto 24px;
+    }
+
+    @media (max-width: 700px) {
+      .panels { grid-template-columns: 1fr; }
+    }
+
+    .panel label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .panel label span {
+      font-size: 0.7rem;
+      text-transform: none;
+      font-weight: 400;
+      color: #64748b;
+      letter-spacing: 0;
+      margin-left: 6px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 280px;
+      background: #1e2230;
+      border: 1px solid #2d3451;
+      border-radius: 10px;
+      color: #cbd5e1;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      padding: 14px;
+      resize: vertical;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #6366f1;
+    }
+
+    textarea::placeholder { color: #3d4a6a; }
+
+    .btn-wrap {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    #results {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .summary {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .stat {
+      background: #1e2230;
+      border-radius: 10px;
+      padding: 14px 24px;
+      text-align: center;
+      border: 1px solid #2d3451;
+      min-width: 140px;
+    }
+
+    .stat .num {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat .lbl {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .stat.green .num { color: #4ade80; }
+    .stat.red   .num { color: #f87171; }
+    .stat.blue  .num { color: #60a5fa; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      background: #1e2230;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #2d3451;
+    }
+
+    thead tr {
+      background: #252b40;
+    }
+
+    th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 9px 16px;
+      border-top: 1px solid #252b40;
+      font-family: 'Courier New', monospace;
+      color: #cbd5e1;
+      word-break: break-all;
+    }
+
+    tr.found   td:last-child { color: #4ade80; }
+    tr.missing td:last-child { color: #f87171; }
+    tr.missing td            { background: #2a1a1a; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .badge.ok  { background: #14532d; color: #4ade80; }
+    .badge.nok { background: #450a0a; color: #f87171; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<h1>📄 Ads.txt Line Checker</h1>
+<p class="subtitle">Vérifiez si toutes les lignes du Fichier 2 sont présentes dans le Fichier 1</p>
+
+<div class="panels">
+  <div class="panel">
+    <label>Fichier 1 <span>— la référence (ex: ads.txt complet)</span></label>
+    <textarea id="file1" placeholder="Collez ici le contenu du Fichier 1..."></textarea>
+  </div>
+  <div class="panel">
+    <label>Fichier 2 <span>— les lignes à vérifier</span></label>
+    <textarea id="file2" placeholder="Collez ici les lignes à chercher..."></textarea>
+  </div>
+</div>
+
+<div class="btn-wrap">
+  <button onclick="check()">🔍 Vérifier</button>
+</div>
+
+<div id="results" class="hidden"></div>
+
+<script>
+  function normalize(line) {
+    return line
+      .toLowerCase()
+      .replace(/\s*,\s*/g, ',')
+      .trim();
+  }
+
+  function check() {
+    const f1 = document.getElementById('file1').value;
+    const f2 = document.getElementById('file2').value;
+
+    if (!f1.trim() || !f2.trim()) {
+      alert('Veuillez coller le contenu dans les deux champs.');
+      return;
+    }
+
+    const lines1 = new Set(
+      f1.split('\n')
+        .map(normalize)
+        .filter(l => l && !l.startsWith('#') && !l.startsWith('contact=') && !l.startsWith('managerdomain') && !l.startsWith('ownerdomain'))
+    );
+
+    const lines2 = f2.split('\n')
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith('#'));
+
+    let found = 0, missing = 0;
+    const rows = lines2.map(raw => {
+      const norm = normalize(raw);
+      const present = lines1.has(norm);
+      present ? found++ : missing++;
+      return { raw, present };
+    });
+
+    const resultsEl = document.getElementById('results');
+    resultsEl.classList.remove('hidden');
+
+    resultsEl.innerHTML = `
+      <div class="summary">
+        <div class="stat blue"><div class="num">${lines2.length}</div><div class="lbl">Lignes vérifiées</div></div>
+        <div class="stat green"><div class="num">${found}</div><div class="lbl">Trouvées ✓</div></div>
+        <div class="stat red"><div class="num">${missing}</div><div class="lbl">Manquantes ✗</div></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ligne (Fichier 2)</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => `
+            <tr class="${r.present ? 'found' : 'missing'}">
+              <td>${i + 1}</td>
+              <td>${escHtml(r.raw)}</td>
+              <td><span class="badge ${r.present ? 'ok' : 'nok'}">${r.present ? '✅ Présente' : '❌ Manquante'}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    resultsEl.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
